@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Luštitel šifer</title>
+  <meta name="description" content="Vložte šifru a luštitel vyzkouší všechny metody z aplikace Šifry a seřadí výsledky podle české čitelnosti.">
+  <meta name="theme-color" content="#1d4e89" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101826" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <img src="icons/icon.svg" alt="" width="32" height="32">
+    <h1>Luštitel šifer</h1>
+    <span id="status" class="status">Načítám slovník…</span>
+  </header>
+
+  <main>
+    <section class="input">
+      <label for="cipher" class="label">Zadání šifry</label>
+      <textarea id="cipher" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off"
+        placeholder="Sem vložte šifru: písmena, čísla, Morseovku (.- -...), body Braillu (1 12 14)…"></textarea>
+      <div class="row">
+        <input id="key" type="text" autocomplete="off" spellcheck="false" placeholder="Heslo nebo klíč (nepovinné)">
+        <button id="paste" type="button" class="ghost">Vložit</button>
+        <button id="clear" type="button" class="ghost">Smazat</button>
+      </div>
+      <div id="hints" class="hints" aria-live="polite"></div>
+    </section>
+
+    <nav id="filters" class="filters" aria-label="Filtr podle druhu šifry"></nav>
+
+    <section id="results" class="results" aria-live="polite"></section>
+    <button id="more" type="button" class="ghost more" hidden>Zobrazit další výsledky</button>
+
+    <details class="about">
+      <summary>Co všechno luštitel zkouší</summary>
+      <ul>
+        <li><b>Substituce:</b> Caesar (všechny posuny), Atbaš s posuny, afinní šifra, posun podle polohy písmene, Autokey (13 variant), Vigenère a Beaufort s odhadem hesla, obecná záměna písmen (frekvenční analýza). Se zadaným heslem navíc všech 20 variant „S heslem“ a monoalfabetická šifra s klíčem.</li>
+        <li><b>Transpozice:</b> pozpátku, prohození dvojic, obdélník (čtení po sloupcích, hadovitě), plot (rail fence).</li>
+        <li><b>Morseovka:</b> se značkami . - nebo libovolnými dvěma znaky, pozpátku, s prohozenými tečkami a čárkami.</li>
+        <li><b>Čísla:</b> pořadí v abecedě (od 1, od 0, s CH, modulo 26), ASCII, dvojková, trojková, osmičková a šestnáctková soustava, římské číslice, permutace ABCD.</li>
+        <li><b>Tabulky:</b> Polybiův čtverec (bez Q, W, X nebo J), velký polský kříž, klávesnice mobilu.</li>
+        <li><b>Další:</b> Braillovo písmo zapsané čísly bodů, Baconova šifra, binární kód, první písmena slov.</li>
+        <li>Výsledky z dekódování symbolů se navíc zkouší posunout Caesarem a Atbašem.</li>
+      </ul>
+      <p>Pořadí určuje „čitelnost“: jak moc se text podobá češtině podle četnosti čtveřic písmen a podle slovníku.
+        Metody vycházejí z aplikace <a href="https://github.com/honzajscz/sifry">Šifry</a> (Vašek Potoček, GPL 2).
+        Slovník a četnosti: <a href="https://github.com/hermitdave/FrequencyWords">FrequencyWords</a> (OpenSubtitles, CC BY-SA 4.0).
+        Vše běží v prohlížeči, i bez internetu.</p>
+    </details>
+  </main>
+
+  <template id="tpl-result">
+    <article class="card">
+      <div class="meter"><span></span></div>
+      <div class="body">
+        <p class="pretty"></p>
+        <p class="raw"></p>
+        <p class="meta"><span class="method"></span> <span class="detail"></span></p>
+      </div>
+      <div class="side">
+        <span class="score"></span>
+        <button type="button" class="copy ghost" title="Zkopírovat výsledek">Kopírovat</button>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
