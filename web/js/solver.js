@@ -47,6 +47,13 @@ function symbolCandidates(info, model) {
   const br = [...s].filter((ch) => ch >= '\u2800' && ch <= '\u283f');
   if (br.length && br.length >= s.replace(/\s/g, '').length * 0.7) out.push(brailleCells([...s]));
 
+  // semafor zapsaný šipkami (↓↙ = A), oba pohledy
+  const semTok = s.trim().split(/[\s,;\/|]+/).filter(Boolean);
+  if (semTok.length && semTok.every((t) => /^[↓↙←↖↑↗→↘]{2}$/.test(t))) out.push(...semaforDecode(semTok));
+
+  // malý polský kříž zapsaný jako #1..#9, X1..X4 a tečka •
+  if (semTok.length && semTok.every((t) => /^(#[1-9]|X[1-4])[•.*]?$/i.test(t))) out.push(...C.malyPolsky(semTok));
+
   // Morseovka (běžné značky)
   const m = s.replace(/[·•∙*]/g, '.').replace(/[\u2212\u2013\u2014_]/g, '-');
   if (/^[.\-\s\/|]+$/.test(m) && /[.\-]/.test(m)) {
@@ -164,6 +171,32 @@ function numberGroups(out, toks) {
       return String.fromCharCode(0x2800 + mask);
     }), 'čísla bodů (1-6)'));
   }
+}
+
+const ARROWS = '↓↙←↖↑↗→↘';
+const SEM_LETTERS = { 3: 'A', 5: 'B', 9: 'C', 17: 'D', 33: 'E', 65: 'F', 129: 'G', 6: 'H', 10: 'I', 80: 'J', 18: 'K', 34: 'L', 66: 'M', 130: 'N', 12: 'O', 20: 'P', 36: 'Q', 68: 'R', 132: 'S', 24: 'T', 40: 'U', 144: 'V', 96: 'W', 160: 'X', 72: 'Y', 192: 'Z' };
+const SEM_DIGITS = { 3: '1', 5: '2', 9: '3', 17: '4', 33: '5', 65: '6', 129: '7', 6: '8', 10: '9', 18: '0' };
+/** Semafor (SemaforView, semafor_decoder.xml): poloha 0 = dolů, dál po směru hodinových ručiček z pohledu pozorovatele. */
+function semaforDecode(tokens) {
+  const out = [];
+  for (const mirror of [false, true]) {
+    let t = '', num = false, bad = 0;
+    for (const tok of tokens) {
+      let mask = 0;
+      for (const a of tok) {
+        let ix = ARROWS.indexOf(a);
+        if (mirror) ix = (8 - ix) % 8;
+        mask |= 1 << ix;
+      }
+      if (mask === 48 && !num) { num = true; continue; }
+      if (mask === 80 && num) { num = false; continue; }
+      const ch = (num ? SEM_DIGITS : SEM_LETTERS)[mask];
+      if (!ch) bad++;
+      t += ch || '?';
+    }
+    out.push({ cat: 'Tabulky', method: 'Semafor', detail: mirror ? 'z pohledu vysílajícího (zrcadlově)' : 'z pohledu pozorovatele', text: t, cost: (mirror ? 1 : 0) + bad });
+  }
+  return out;
 }
 
 /** Dekóduje buňky Braillova písma (znaky U+2800..U+283F), včetně prefixu číslic ⠼. */
@@ -317,6 +350,45 @@ export function crackVigenere(model, text) {
   });
 }
 
+/** Vigenère a Beaufort s heslem ze slovníku (nejčastější česká slova). */
+export function crackVigenereDict(model, text, maxWords = 6000) {
+  const codes = codesOf(text);
+  const n = codes.length;
+  if (n < 8) return [];
+  const buf = new Array(n);
+  const best = [];
+  let tried = 0;
+  for (const [w] of model.words) {
+    if (w.length < 3 || w.length > 12 || w.length > n / 2) continue;
+    if (++tried > maxWords) break;
+    const key = [...w].map((ch) => ch.charCodeAt(0) - 65);
+    const L = key.length;
+    for (const beaufort of [false, true]) {
+      for (let i = 0; i < n; i++) {
+        const k = key[i % L];
+        buf[i] = beaufort ? (k - codes[i] + 26) % 26 : (codes[i] - k + 26) % 26;
+      }
+      const f = model.fitness(buf);
+      if (best.length < 3 || f > best[best.length - 1].f) {
+        best.push({ f, w, beaufort });
+        best.sort((a, b) => b.f - a.f);
+        if (best.length > 3) best.pop();
+      }
+    }
+  }
+  return best.map(({ w, beaufort }) => {
+    let i = 0;
+    const t = text.replace(/[A-Z]/g, (ch) => {
+      const c = ch.charCodeAt(0) - 65, k = w.charCodeAt(i++ % w.length) - 65;
+      return ABC[beaufort ? (k - c + 26) % 26 : (c - k + 26) % 26];
+    });
+    return {
+      cat: 'Substituce', method: beaufort ? 'Beaufort (B(n) − A(n))' : 'Vigenère (A(n) − B(n))',
+      detail: `heslo ze slovníku: ${w}`, text: t, cost: 2, penalty: Math.min(25, 250 / n),
+    };
+  });
+}
+
 /** Obecná záměna písmen: horolezecký algoritmus nad čtveřicemi. */
 export function crackMono(model, text, timeMs = 1500) {
   const codes = codesOf(text);
@@ -363,7 +435,7 @@ export function crackMono(model, text, timeMs = 1500) {
   const t = text.replace(/[A-Z]/g, (ch) => ABC[bestKey[ch.charCodeAt(0) - 65]]);
   const used = [...new Set(codes)].sort((a, b) => a - b);
   const map = used.map((c) => `${ABC[c]}→${ABC[bestKey[c]]}`).join(' ');
-  return [{ cat: 'Substituce', method: 'Obecná záměna písmen', detail: `odhad frekvenční analýzou: ${map}`, text: t, cost: 4, penalty: Math.min(40, 1500 / n) }];
+  return [{ cat: 'Substituce', method: 'Obecná záměna písmen', detail: `odhad frekvenční analýzou: ${map}`, text: t, cost: 4, penalty: Math.min(40, 1500 / n), key: bestKey }];
 }
 
 // ---------------------------------------------------------------- hlavní běh
@@ -390,12 +462,16 @@ export function solve(model, raw, opts = {}) {
     cands.push(...C.caesar(t), ...C.atbash(t), ...C.affine(t), ...C.pozice(t), ...C.autokey(t));
     const tr = C.transpositions(t);
     cands.push(...tr);
-    // pozpátku + posun
-    const rev = C.lettersOnly(t).split('').reverse().join('');
-    cands.push(...C.caesar(rev).map((c) => ({ ...c, method: 'Pozpátku + Caesar', cost: 3 })));
+    // dva kroky: transpozice a potom posun (pořadí nehraje roli, posun s přesmyknutím komutuje)
+    const n = C.lettersOnly(t).length;
+    const twoStep = Math.min(25, 400 / Math.max(n, 1));
+    for (const base of tr)
+      for (const c of FAST_TRANSFORMS(base.text))
+        cands.push({ ...c, cat: 'Dva kroky', method: `${base.method} → ${c.method}`, detail: `${base.detail}; ${c.detail}`, cost: base.cost + c.cost, penalty: twoStep });
     if (opts.key) cands.push(...C.heslo(t, opts.key), ...C.klic(t, opts.key));
     if (opts.heavy !== false) {
       cands.push(...crackVigenere(model, t));
+      cands.push(...crackVigenereDict(model, t));
       cands.push(...crackMono(model, t, opts.monoMs || 1500));
     }
     // první a poslední písmena slov (akrostich)
@@ -416,6 +492,9 @@ export function solve(model, raw, opts = {}) {
   for (const base of symTop) {
     for (const c of FAST_TRANSFORMS(base.text))
       cands.push(quick({ ...c, cat: base.cat, method: `${base.method} → ${c.method}`, detail: `${base.detail}; ${c.detail}`, cost: base.cost + c.cost + 1 }));
+    for (const tr of C.transpositions(base.text).slice(0, 80)) {
+      cands.push(quick({ ...tr, cat: 'Dva kroky', method: `${base.method} → ${tr.method}`, detail: `${base.detail}; ${tr.detail}`, cost: base.cost + tr.cost + 1, penalty: Math.min(25, 400 / Math.max(1, base.text.length)) }));
+    }
     if (opts.key) for (const c of C.heslo(base.text, opts.key))
       cands.push(quick({ ...c, cat: base.cat, method: `${base.method} → ${c.method}`, detail: `${base.detail}; ${c.detail}`, cost: base.cost + c.cost + 1 }));
   }

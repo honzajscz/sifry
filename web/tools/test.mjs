@@ -52,6 +52,16 @@ const cases = [
   ['Římské', [...L('KAMEN')].map((c) => ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI','XXII','XXIII','XXIV','XXV','XXVI'][c.charCodeAt(0) - 65]).join(' '), 'KAMEN'],
 ];
 
+const SEM = { A: 3, B: 5, C: 9, D: 17, E: 33, F: 65, G: 129, H: 6, I: 10, J: 80, K: 18, L: 34, M: 66, N: 130, O: 12, P: 20, Q: 36, R: 68, S: 132, T: 24, U: 40, V: 144, W: 96, X: 160, Y: 72, Z: 192 };
+const semafor = (s) => [...L(s)].map((c) => [...'↓↙←↖↑↗→↘'].filter((_, i) => SEM[c] & (1 << i)).join('')).join(' ');
+const maly = (s) => [...L(s)].map((c) => { const i = c.charCodeAt(0) - 65; return i < 9 ? `#${i + 1}` : i < 18 ? `#${i - 8}•` : i < 22 ? `X${i - 17}` : `X${i - 21}•`; }).join(' ');
+cases.push(
+  ['Obdélník + Caesar', shift(columns(P2, 4), 7), P2],
+  ['Vigenère (slovník)', vig(L(P2), 'LES'), P2],
+  ['Semafor', semafor('SRAZ U MOSTU'), 'SRAZUMOSTU'],
+  ['Malý polský kříž', maly('POKLAD JE U KOSTELA'), 'POKLADJEUKOSTELA'],
+);
+
 let ok = 0;
 for (const [name, input, expected] of cases) {
   const t0 = Date.now();

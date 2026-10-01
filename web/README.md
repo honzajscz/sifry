@@ -21,6 +21,17 @@ i v mobilu, dá se nainstalovat na plochu a po prvním načtení běží i bez i
 * Výsledky z dekódování symbolů se navíc zkusí posunout Caesarem a Atbašem
   (např. čísla A=1 posunutá o 5).
 * Čísla A=1..26 a Morseovku bez oddělovačů rozdělí podle jazykového modelu.
+* **Dva kroky**: transpozice a k tomu Caesar nebo Atbaš, Vigenère s heslem ze slovníku.
+* **Semafor** (šipky ↓↙ …) a **malý polský kříž** (#1 až #9, X1 až X4, tečka •).
+
+Další záložky a pomůcky:
+
+* **Zadávání klikáním**: Braille, Morse, semafor, velký a malý polský kříž, námořní vlajky.
+* **Slova**: hledání podle vzoru (`p?k?ad`, `*ovna`, `1221`), přesmyčky a regulární výrazy
+  jako v modulu Databáze slov. Volitelně nad úplným slovníkem z aplikace (3,6 milionu tvarů),
+  který se stáhne až při prvním použití.
+* **Záměna**: ruční luštění záměny písmen s tabulkou četností (modul Frekvence),
+  s automatickým odhadem jako výchozím bodem.
 
 ## Jak hodnotí výsledky
 
@@ -47,6 +58,12 @@ cd web && python3 -m http.server 8000
 ```
 
 Testy na vzorových šifrách: `node web/tools/test.mjs`.
+
+Úplný slovník pro hledání slov se při nasazení vyrobí ze slovníku aplikace; lokálně:
+
+```sh
+zcat spa2/src/main/assets/raw/cs.canon.gz | cut -d: -f1 | uniq | gzip -9 > web/data/cs-full.txt.gz
+```
 
 Při změně souborů zvyšte `VERSION` v `sw.js`, aby si nainstalované aplikace stáhly novou verzi.
 

@@ -397,3 +397,29 @@ export const BRAILLE = {
   33: 'Á', 41: 'Č', 57: 'Ď', 28: 'É', 35: 'Ě', 12: 'Í', 43: 'Ň', 42: 'Ó', 58: 'Ř',
   49: 'Š', 51: 'Ť', 44: 'Ú', 62: 'Ů', 47: 'Ý', 46: 'Ž',
 };
+
+// ---------------------------------------------------------------- malý polský kříž
+
+/**
+ * Port MalyPolskyKrizDecoder. Symboly: #1..#9 (mřížka 3×3 po řádcích), X1..X4
+ * (kříž X: nahoře, vlevo, vpravo, dole), tečka "•" za symbolem.
+ */
+export function malyPolsky(tokens) {
+  const parsed = tokens.map((t) => {
+    const T = t.toUpperCase();
+    const dot = /[•.*]$/.test(T) ? 1 : 0;
+    const n = +T[1];
+    if (T[0] === '#') return { yq: 0, xq: dot, x: (n - 1) % 3, y: Math.floor((n - 1) / 3) };
+    return { yq: 1, xq: dot, x: [0, 1, 0, 1][n - 1], y: [0, 0, 1, 1][n - 1] };
+  });
+  // X1 nahoře = (0,0), X2 vlevo = (1,0), X3 vpravo = (0,1), X4 dole = (1,1) podle komentáře v aplikaci
+  const variants = [
+    ['9 - tečka - 4', (p) => (p.yq === 0 ? p.xq * 9 + p.y * 3 + p.x : 18 + p.xq * 4 + p.y * 2 + p.x)],
+    ['9 - 4 - tečka', (p) => (p.yq === 0 ? p.xq * 13 + p.y * 3 + p.x : p.xq * 13 + 9 + p.y * 2 + p.x)],
+    ['tečka - 9 - 4', (p) => (p.yq === 0 ? p.y * 6 + p.x * 2 + p.xq : 18 + p.y * 4 + p.x * 2 + p.xq)],
+  ];
+  return variants.map(([name, f], i) => ({
+    cat: 'Tabulky', method: 'Malý polský kříž', detail: `pořadí ${name}`,
+    text: parsed.map((p) => chr(f(p)) || '?').join(''), cost: i ? 1 : 0,
+  }));
+}

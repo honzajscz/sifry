@@ -5,7 +5,7 @@ name: Luštitel na GitHub Pages
 on:
   push:
     branches: [master]
-    paths: ['web/**', '.github/workflows/pages.yml']
+    paths: ['web/**', 'spa2/src/main/assets/raw/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -30,6 +30,8 @@ jobs:
           node-version: 22
       - name: Testy luštitele
         run: node web/tools/test.mjs
+      - name: Úplný slovník z aplikace pro hledání slov
+        run: zcat spa2/src/main/assets/raw/cs.canon.gz | cut -d: -f1 | uniq | gzip -9 > web/data/cs-full.txt.gz
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
