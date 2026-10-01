@@ -43,6 +43,10 @@ function symbolCandidates(info, model) {
   const out = [];
   const { s, up } = info;
 
+  // Braillovo písmo jako znaky Unicode (⠁⠃⠉…), pořadí bitů je stejné jako v aplikaci
+  const br = [...s].filter((ch) => ch >= '\u2800' && ch <= '\u283f');
+  if (br.length && br.length >= s.replace(/\s/g, '').length * 0.7) out.push(brailleCells([...s]));
+
   // Morseovka (běžné značky)
   const m = s.replace(/[·•∙*]/g, '.').replace(/[\u2212\u2013\u2014_]/g, '-');
   if (/^[.\-\s\/|]+$/.test(m) && /[.\-]/.test(m)) {
@@ -154,13 +158,31 @@ function numberGroups(out, toks) {
     out.push({ cat: 'Tabulky', method: 'Klávesnice mobilu', detail: 'opakované stisky (222 = C)', text: toks.map((t) => (t[0] === '0' ? ' ' : C.KEYPAD[+t[0]][t.length - 1])).join(''), cost: 1 });
   // Braillovo písmo zapsané čísly bodů
   if (toks.every((t) => /^[1-6]+$/.test(t) && new Set(t).size === t.length) && toks.some((t) => t.length > 1)) {
-    const t = toks.map((x) => {
+    out.push(brailleCells(toks.map((x) => {
       let mask = 0;
       for (const d of x) mask |= 1 << (+d - 1);
-      return C.BRAILLE[mask] || '?';
-    }).join('');
-    out.push({ cat: 'Braille', method: 'Braillovo písmo', detail: 'čísla bodů (1-6)', text: canon(t), cost: (t.match(/\?/g) || []).length });
+      return String.fromCharCode(0x2800 + mask);
+    }), 'čísla bodů (1-6)'));
   }
+}
+
+/** Dekóduje buňky Braillova písma (znaky U+2800..U+283F), včetně prefixu číslic ⠼. */
+function brailleCells(chars, detail = 'znaky ⠁⠃⠉') {
+  let t = '', num = false;
+  const DIG = { 1: '1', 3: '2', 9: '3', 25: '4', 17: '5', 11: '6', 27: '7', 19: '8', 10: '9', 26: '0' };
+  for (const ch of chars) {
+    const code = ch.charCodeAt(0);
+    if (/\s/.test(ch) || code === 0x2800) { t += ' '; num = false; continue; }
+    if (code < 0x2800 || code > 0x283f) { t += ch; continue; }
+    const mask = code - 0x2800;
+    if (mask === 60) { num = true; continue; }
+    if (mask === 32 || mask === 48 || mask === 16) continue; // velké / malé písmo
+    if (num && DIG[mask]) { t += DIG[mask]; continue; }
+    num = false;
+    t += C.BRAILLE[mask] || '?';
+  }
+  t = t.replace(/ +/g, ' ').trim();
+  return { cat: 'Braille', method: 'Braillovo písmo', detail, text: canon(t), cost: (t.match(/\?/g) || []).length };
 }
 
 function continuousDigits(out, d, model) {

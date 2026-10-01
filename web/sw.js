@@ -1,6 +1,6 @@
 // Offline režim: vše potřebné se uloží do mezipaměti při první návštěvě.
 // Při změně souborů zvyšte VERSION, aby se mezipaměť obnovila.
-const VERSION = 'lustitel-v1';
+const VERSION = 'lustitel-v2';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/app.js', 'js/worker.js', 'js/model.js', 'js/solver.js', 'js/ciphers.js',

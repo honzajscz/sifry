@@ -46,6 +46,7 @@ const cases = [
   ['Záměna', sub(LONG), LONG],
   ['Mobil', multitap('SRAZ U MOSTU'), 'SRAZUMOSTU'],
   ['Braille', [...'POKLADJEUKOSTELA'].map((c) => braille[c]).join(' '), 'POKLADJEUKOSTELA'],
+  ['Braille Unicode', '⠏⠕⠅⠇⠁⠙ ⠚⠑ ⠥ ⠅⠕⠎⠞⠑⠇⠁', 'POKLADJEUKOSTELA'],
   ['Bacon', [...L('UTEKLIJSME')].map((c) => (c.charCodeAt(0) - 65).toString(2).padStart(5, '0').replace(/0/g, 'A').replace(/1/g, 'B')).join(' '), 'UTEKLIJSME'],
   ['Binárně ASCII', [...'AHOJ'].map((c) => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' '), 'AHOJ'],
   ['Římské', [...L('KAMEN')].map((c) => ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI','XXII','XXIII','XXIV','XXV','XXVI'][c.charCodeAt(0) - 65]).join(' '), 'KAMEN'],

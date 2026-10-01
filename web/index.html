@@ -29,6 +29,25 @@
         <button id="paste" type="button" class="ghost">Vložit</button>
         <button id="clear" type="button" class="ghost">Smazat</button>
       </div>
+      <details class="pad" id="braille-pad">
+        <summary>Zadat Braillovo písmo klikáním</summary>
+        <div class="pad-body">
+          <div class="cell" role="group" aria-label="Body Braillovy buňky">
+            <button type="button" class="dot" data-dot="1" aria-pressed="false">1</button>
+            <button type="button" class="dot" data-dot="4" aria-pressed="false">4</button>
+            <button type="button" class="dot" data-dot="2" aria-pressed="false">2</button>
+            <button type="button" class="dot" data-dot="5" aria-pressed="false">5</button>
+            <button type="button" class="dot" data-dot="3" aria-pressed="false">3</button>
+            <button type="button" class="dot" data-dot="6" aria-pressed="false">6</button>
+          </div>
+          <div class="pad-actions">
+            <button type="button" id="br-add" class="primary">Přidat znak <span id="br-preview" class="br-preview">⠀</span></button>
+            <button type="button" id="br-space" class="ghost">Mezera</button>
+            <button type="button" id="br-back" class="ghost">Smazat poslední</button>
+            <p class="pad-help">Vyznačte tečky tak, jak jsou v zadání, a přidejte znak. Jde to i bez klikání: napište čísla bodů oddělená mezerou (1 12 14) nebo vložte znaky ⠁⠃⠉.</p>
+          </div>
+        </div>
+      </details>
       <div id="hints" class="hints" aria-live="polite"></div>
     </section>
 

@@ -70,6 +70,26 @@ $('#paste').addEventListener('click', async () => {
     statusEl.textContent = 'Vložte text ručně (Ctrl+V).';
   }
 });
+// Braillova klávesnice: tečky skládají znak Unicode U+2800 + maska (bod 1 = bit 0)
+const dots = [...document.querySelectorAll('.dot')];
+const brPreview = $('#br-preview');
+const brMask = () => dots.reduce((m, d) => (d.getAttribute('aria-pressed') === 'true' ? m | (1 << (d.dataset.dot - 1)) : m), 0);
+const brUpdate = () => (brPreview.textContent = String.fromCharCode(0x2800 + brMask()));
+dots.forEach((d) => d.addEventListener('click', () => {
+  d.setAttribute('aria-pressed', String(d.getAttribute('aria-pressed') !== 'true'));
+  brUpdate();
+}));
+const brInsert = (ch) => { cipher.value += ch; schedule(); };
+$('#br-add').addEventListener('click', () => {
+  const m = brMask();
+  if (!m) return;
+  brInsert(String.fromCharCode(0x2800 + m));
+  dots.forEach((d) => d.setAttribute('aria-pressed', 'false'));
+  brUpdate();
+});
+$('#br-space').addEventListener('click', () => brInsert(' '));
+$('#br-back').addEventListener('click', () => { cipher.value = [...cipher.value].slice(0, -1).join(''); schedule(); });
+
 moreBtn.addEventListener('click', () => { shown += PAGE * 2; render(); });
 
 function renderHints(hints) {
