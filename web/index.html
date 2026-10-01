@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Luštitel šifer</title>
+  <meta name="description" content="Vložte šifru a luštitel vyzkouší všechny metody z aplikace Šifry a seřadí výsledky podle české čitelnosti.">
+  <meta name="theme-color" content="#1d4e89" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101826" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <img src="icons/icon.svg" alt="" width="32" height="32">
+    <h1>Luštitel šifer</h1>
+    <span id="status" class="status">Načítám slovník…</span>
+  </header>
+
+  <main>
+    <nav class="tabs" role="tablist" aria-label="Nástroje">
+      <button type="button" role="tab" id="tab-lustitel" aria-controls="panel-lustitel" aria-selected="true">Luštitel</button>
+      <button type="button" role="tab" id="tab-slova" aria-controls="panel-slova" aria-selected="false">Slova</button>
+      <button type="button" role="tab" id="tab-zamena" aria-controls="panel-zamena" aria-selected="false">Záměna</button>
+    </nav>
+
+    <section class="input" id="input-block">
+      <label for="cipher" class="label">Zadání šifry</label>
+      <textarea id="cipher" rows="4" spellcheck="false" autocapitalize="off" autocomplete="off"
+        placeholder="Sem vložte šifru: písmena, čísla, Morseovku (.- -...), body Braillu (1 12 14)…"></textarea>
+      <div class="row">
+        <input id="key" type="text" autocomplete="off" spellcheck="false" placeholder="Heslo nebo klíč (nepovinné)">
+        <button id="paste" type="button" class="ghost">Vložit</button>
+        <button id="clear" type="button" class="ghost">Smazat</button>
+      </div>
+      <div class="padbar">
+        <span class="padbar-label">Zadat klikáním:</span>
+        <div id="pad-choice" class="chips"></div>
+      </div>
+      <div id="pad-area" class="pad" hidden></div>
+    </section>
+
+    <section id="panel-lustitel" role="tabpanel" aria-labelledby="tab-lustitel">
+      <div id="hints" class="hints" aria-live="polite"></div>
+      <nav id="filters" class="filters chips" aria-label="Filtr podle druhu šifry"></nav>
+      <div id="results" class="results" aria-live="polite"></div>
+      <button id="more" type="button" class="ghost more" hidden>Zobrazit další výsledky</button>
+
+      <details class="about">
+        <summary>Co všechno luštitel zkouší</summary>
+        <ul>
+          <li><b>Substituce:</b> Caesar (všechny posuny), Atbaš s posuny, afinní šifra, posun podle polohy písmene, Autokey (13 variant), Vigenère a Beaufort s odhadem hesla i s heslem ze slovníku, obecná záměna písmen (frekvenční analýza). Se zadaným heslem navíc všech 20 variant „S heslem“ a monoalfabetická šifra s klíčem.</li>
+          <li><b>Transpozice:</b> pozpátku, prohození dvojic, obdélník (čtení po sloupcích, hadovitě), plot (rail fence).</li>
+          <li><b>Dva kroky:</b> transpozice a k tomu Caesar nebo Atbaš; dekódované symboly (čísla, Morse, tabulky) a k tomu posun nebo transpozice.</li>
+          <li><b>Morseovka:</b> se značkami . - nebo libovolnými dvěma znaky, pozpátku, s prohozenými tečkami a čárkami.</li>
+          <li><b>Čísla:</b> pořadí v abecedě (od 1, od 0, s CH, modulo 26), ASCII, dvojková, trojková, osmičková a šestnáctková soustava, římské číslice, permutace ABCD.</li>
+          <li><b>Tabulky:</b> Polybiův čtverec (bez Q, W, X nebo J), velký a malý polský kříž, semafor, klávesnice mobilu.</li>
+          <li><b>Další:</b> Braillovo písmo, Baconova šifra, binární kód, první písmena slov.</li>
+        </ul>
+        <p>Pořadí určuje „čitelnost“: jak moc se text podobá češtině podle četnosti čtveřic písmen a podle slovníku.
+          Metody vycházejí z aplikace <a href="https://github.com/honzajscz/sifry">Šifry</a> (Vašek Potoček, GPL 2).
+          Slovník a četnosti: <a href="https://github.com/hermitdave/FrequencyWords">FrequencyWords</a> (OpenSubtitles, CC BY-SA 4.0).
+          Vše běží v prohlížeči, i bez internetu.</p>
+      </details>
+    </section>
+
+    <section id="panel-slova" role="tabpanel" aria-labelledby="tab-slova" hidden>
+      <label for="wq" class="label">Hledané slovo</label>
+      <input id="wq" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="např. p?k?ad, *ovna, 1221">
+      <div class="wopts">
+        <fieldset class="seg" aria-label="Způsob hledání">
+          <label><input type="radio" name="wmode" value="pattern" checked> Vzor</label>
+          <label><input type="radio" name="wmode" value="anagram"> Přesmyčka</label>
+          <label><input type="radio" name="wmode" value="regex"> Regulární výraz</label>
+        </fieldset>
+        <label class="wdict" for="wdict">Slovník
+          <select id="wdict">
+            <option value="small">Běžná slova (80 tisíc)</option>
+            <option value="full">Úplný z aplikace (3,6 mil., 9 MB)</option>
+          </select>
+        </label>
+        <label class="wpartial" hidden><input type="checkbox" id="wpartial"> i slova jen z části písmen</label>
+      </div>
+      <p id="whelp" class="pad-help"></p>
+      <p id="wstatus" class="wstatus" aria-live="polite"></p>
+      <div id="wresults" class="wresults"></div>
+    </section>
+
+    <section id="panel-zamena" role="tabpanel" aria-labelledby="tab-zamena" hidden>
+      <p class="pad-help">Ruční luštění záměny písmen (modul Frekvence z aplikace). Do políčka pod písmenem šifry napište, za jaké písmeno ho chcete zaměnit. Text se bere z pole Zadání šifry.</p>
+      <div class="row wrap">
+        <button type="button" id="z-auto" class="primary">Odhadnout automaticky</button>
+        <button type="button" id="z-freq" class="ghost">Podle četnosti</button>
+        <button type="button" id="z-clear" class="ghost">Vymazat záměny</button>
+      </div>
+      <div class="ztable-wrap"><table id="ztable" class="ztable"></table></div>
+      <p class="zlang"><b>Četnost v češtině:</b> <span id="zlang"></span></p>
+      <p id="zstatus" class="wstatus" aria-live="polite"></p>
+      <div class="zout-wrap">
+        <p class="label">Výsledek</p>
+        <p id="zout" class="zout"></p>
+        <p id="zbigrams" class="pad-help"></p>
+      </div>
+    </section>
+  </main>
+
+  <template id="tpl-result">
+    <article class="card">
+      <div class="meter"><span></span></div>
+      <div class="body">
+        <p class="pretty"></p>
+        <p class="raw"></p>
+        <p class="meta"><span class="method"></span> <span class="detail"></span></p>
+      </div>
+      <div class="side">
+        <span class="score"></span>
+        <button type="button" class="copy ghost" title="Zkopírovat výsledek">Kopírovat</button>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
